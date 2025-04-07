@@ -1,0 +1,10 @@
+com\example\demo\DemoApplication.class
+com\example\demo\model\Departamento.class
+com\example\demo\model\Empleado.class
+com\example\demo\specification\EmpleadoSpecifications.class
+com\example\demo\service\EmpleadoService.class
+com\example\demo\controller\DepartamentoController.class
+com\example\demo\controller\EmpleadoController.class
+com\example\demo\repository\DepartamentoRepository.class
+com\example\demo\service\DepartamentoService.class
+com\example\demo\repository\EmpleadoRepository.class
