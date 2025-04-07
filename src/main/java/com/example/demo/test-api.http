@@ -1,0 +1,40 @@
+### Crear un departamento
+POST http://localhost:8080/departamentos
+Content-Type: application/json
+
+{
+  "name": "Desarrollo"
+}
+
+### Crear un empleado
+POST http://localhost:8080/empleados
+Content-Type: application/json
+
+{
+  "name": "Edgar",
+  "lastName": "Nunez",
+  "departamento": {
+    "id": 1
+  }
+}
+
+### Obtener empleados de un departamento
+GET http://localhost:8080/empleados/departamento/1
+
+### Obtener empleado por ID
+GET http://localhost:8080/empleados/1
+
+### Modificar un empleado
+PUT http://localhost:8080/empleados/1
+Content-Type: application/json
+
+{
+  "name": "Edgar Modificado",
+  "lastName": "Nunez",
+  "departamento": {
+    "id": 1
+  }
+}
+
+### Borrar un empleado
+DELETE http://localhost:8080/empleados/1

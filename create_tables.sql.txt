@@ -1,0 +1,128 @@
+Apartado 1: Definición de las Tablas
+Tabla PROVINCIAS
+
+sql
+Copy
+CREATE TABLE PROVINCIAS (
+  COD_PROVINCIA   VARCHAR2(10) PRIMARY KEY,
+  DESCRIPCION     VARCHAR2(100) NOT NULL,
+  ACTIVO          CHAR(1) DEFAULT 'S'  -- 'S' = vigente, 'N' = baja lógica
+);
+Tabla MUNICIPIOS
+
+sql
+Copy
+CREATE TABLE MUNICIPIOS (
+  COD_MUNICIPIO   VARCHAR2(10) PRIMARY KEY,
+  DESCRIPCION     VARCHAR2(100) NOT NULL,
+  COD_PROVINCIA   VARCHAR2(10) NOT NULL,
+  NUM_HABITANTES  NUMBER,
+  ACTIVO          CHAR(1) DEFAULT 'S',
+  CONSTRAINT FK_MUNICIPIOS_PROVINCIAS 
+     FOREIGN KEY (COD_PROVINCIA) REFERENCES PROVINCIAS (COD_PROVINCIA)
+);
+Tabla USUARIOS
+
+sql
+Copy
+CREATE TABLE USUARIOS (
+  DNI             VARCHAR2(15) PRIMARY KEY,
+  NOMBRE          VARCHAR2(50) NOT NULL,
+  APELLIDOS       VARCHAR2(100),
+  TELEFONO        VARCHAR2(20),
+  DIRECCION       VARCHAR2(200),
+  COD_MUNICIPIO   VARCHAR2(10) NOT NULL,
+  ACTIVO          CHAR(1) DEFAULT 'S',
+  CONSTRAINT FK_USUARIOS_MUNICIPIOS 
+     FOREIGN KEY (COD_MUNICIPIO) REFERENCES MUNICIPIOS (COD_MUNICIPIO)
+);
+Apartado 2: Consulta para recuperar DNI, nombre y apellidos de usuarios de la población 'Valencia'
+(sin registros con baja lógica)
+
+Con cursor implícito (usando un bloque PL/SQL)
+sql
+Copy
+SET SERVEROUTPUT ON;
+BEGIN
+  FOR reg IN (
+    SELECT U.DNI, U.NOMBRE, U.APELLIDOS
+    FROM USUARIOS U
+    JOIN MUNICIPIOS M ON U.COD_MUNICIPIO = M.COD_MUNICIPIO
+    WHERE U.ACTIVO = 'S'
+      AND M.DESCRIPCION = 'Valencia'
+      AND M.ACTIVO = 'S'
+  ) LOOP
+    DBMS_OUTPUT.PUT_LINE('DNI: ' || reg.DNI || ' - Nombre: ' || reg.NOMBRE || ' - Apellidos: ' || reg.APELLIDOS);
+  END LOOP;
+END;
+/
+Con cursor explícito
+sql
+Copy
+SET SERVEROUTPUT ON;
+DECLARE
+  CURSOR c_usuarios IS
+    SELECT U.DNI, U.NOMBRE, U.APELLIDOS
+    FROM USUARIOS U
+    JOIN MUNICIPIOS M ON U.COD_MUNICIPIO = M.COD_MUNICIPIO
+    WHERE U.ACTIVO = 'S'
+      AND M.DESCRIPCION = 'Valencia'
+      AND M.ACTIVO = 'S';
+  
+  reg c_usuarios%ROWTYPE;
+BEGIN
+  OPEN c_usuarios;
+  LOOP
+    FETCH c_usuarios INTO reg;
+    EXIT WHEN c_usuarios%NOTFOUND;
+    DBMS_OUTPUT.PUT_LINE('DNI: ' || reg.DNI || ' - Nombre: ' || reg.NOMBRE || ' - Apellidos: ' || reg.APELLIDOS);
+  END LOOP;
+  CLOSE c_usuarios;
+END;
+/
+Apartado 3: Paquete PCK_EJERCICIO_PRUEBA con la función F_Municipios_Validos
+Especificación del paquete
+sql
+Copy
+CREATE OR REPLACE PACKAGE PCK_EJERCICIO_PRUEBA AS
+  FUNCTION F_Municipios_Validos(P_cod_municipio VARCHAR2) RETURN BOOLEAN;
+END PCK_EJERCICIO_PRUEBA;
+/
+Cuerpo del paquete
+sql
+Copy
+CREATE OR REPLACE PACKAGE BODY PCK_EJERCICIO_PRUEBA AS
+  FUNCTION F_Municipios_Validos(P_cod_municipio VARCHAR2) RETURN BOOLEAN IS
+    v_num_habitantes MUNICIPIOS.NUM_HABITANTES%TYPE;
+    v_cod_provincia MUNICIPIOS.COD_PROVINCIA%TYPE;
+    v_activo MUNICIPIOS.ACTIVO%TYPE;
+  BEGIN
+    -- Obtener datos del municipio
+    SELECT NUM_HABITANTES, COD_PROVINCIA, ACTIVO
+      INTO v_num_habitantes, v_cod_provincia, v_activo
+      FROM MUNICIPIOS
+     WHERE COD_MUNICIPIO = P_cod_municipio;
+    
+    -- Condición 1: Independientemente de baja lógica, si habitantes >= 1000
+    IF v_num_habitantes >= 1000 THEN
+      RETURN TRUE;
+    END IF;
+    
+    -- Las siguientes condiciones se evalúan sólo si el municipio está activo
+    IF v_activo = 'S' THEN
+      IF v_cod_provincia = '12' AND v_num_habitantes >= 400 AND v_num_habitantes < 1000 THEN
+        RETURN TRUE;
+      ELSIF v_cod_provincia = '46' AND v_num_habitantes >= 650 AND v_num_habitantes < 1000 THEN
+        RETURN TRUE;
+      ELSIF v_cod_provincia = '03' AND v_num_habitantes > 500 AND v_num_habitantes < 1000 THEN
+        RETURN TRUE;
+      END IF;
+    END IF;
+    
+    RETURN FALSE;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      RETURN FALSE;
+  END F_Municipios_Validos;
+END PCK_EJERCICIO_PRUEBA;
+/
